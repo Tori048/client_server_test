@@ -1,75 +1,70 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 
-namespace ConsoleApp8
+namespace SocketServer
 {
-    class Server
+    class Program
     {
-        static int port = 8005;
         static void Main(string[] args)
         {
-            // получаем адреса для запуска сокета
-            IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), port);
+            // Устанавливаем для сокета локальную конечную точку
+            IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
+            IPAddress ipAddr = ipHost.AddressList[0];
+            IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 8005);
 
-            // создаем сокет
-            Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            // Создаем сокет Tcp/Ip
+            Socket sListener = new Socket(ipAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            // Назначаем сокет локальной конечной точке и слушаем входящие сокеты
             try
             {
-                // связываем сокет с локальной точкой, по которой будем принимать данные
-                listenSocket.Bind(ipPoint);
-                // начинаем прослушивание, максимальное количество подключений - 10
-                listenSocket.Listen(10); 
-                Console.WriteLine("Сервер запущен. Ожидание подключений...");
+                sListener.Bind(ipEndPoint);
+                sListener.Listen(10);
 
+                // Начинаем слушать соединения
                 while (true)
                 {
-                    Socket handler = listenSocket.Accept();
-                    Console.WriteLine("Клиент найден");
-                    // получаем сообщение
-                    StringBuilder builder = new StringBuilder();
-                    int bytes = 0; // количество полученных байтов
-                    byte[] data = new byte[256]; // буфер для получаемых данных
+                    Console.WriteLine("Ожидаем соединение через порт {0}", ipEndPoint);
 
-                    do
-                    {
-                        bytes = handler.Receive(data);
-                        builder.Append(Encoding.Unicode.GetString(data, 0, bytes));
-                    }
-                    while (handler.Available > 0);
+                    // Программа приостанавливается, ожидая входящее соединение
+                    Socket handler = sListener.Accept();
+                    string data = null;
 
-                    Console.WriteLine(DateTime.Now.ToShortTimeString() + ": " + builder.ToString());
-                    // отправляем ответ
-                    string message;
-                    if (builder.ToString().Equals("Пока"))
+                    // Мы дождались клиента, пытающегося с нами соединиться
+
+                    byte[] bytes = new byte[1024];
+                    int bytesRec = handler.Receive(bytes);
+
+                    data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
+
+                    // Показываем данные на консоли
+                    Console.Write("Полученный текст: " + data + "\n\n");
+
+                    // Отправляем ответ клиенту\
+                    string reply = "Спасибо за запрос в " + data.Length.ToString()
+                            + " символов";
+                    byte[] msg = Encoding.UTF8.GetBytes(reply);
+                    handler.Send(msg);
+
+                    if (data.IndexOf("<TheEnd>") > -1)
                     {
-                        message = "Пока";
-                        data = Encoding.Unicode.GetBytes(message);
-                        handler.Send(data);
-                     //   handler.Shutdown(SocketShutdown.Both);
-                     //   handler.Close();
+                        Console.WriteLine("Сервер завершил соединение с клиентом.");
+                        break;
                     }
-                    else
-                    {
-                        message = "ваше сообщение доставлено";
-                        data = Encoding.Unicode.GetBytes(message);
-                        handler.Send(data);
-                    }
-                    // закрываем сокет
-                    if (builder.ToString().Equals("Пока"))
-                    {
-                        handler.Shutdown(SocketShutdown.Both);
-                        handler.Close();
-                    }
+
+                    handler.Shutdown(SocketShutdown.Both);
+                    handler.Close();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
+            }
+            finally
+            {
+                Console.ReadLine();
             }
         }
     }

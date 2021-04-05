@@ -3,54 +3,64 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 
-namespace SocketTcpClient
+namespace SocketClient
 {
     class Program
     {
-        // адрес и порт сервера, к которому будем подключаться
-        static int port = 8005; // порт сервера
-        static string address = "127.0.0.1"; // адрес сервера
-
         static void Main(string[] args)
         {
-            StringBuilder builder = new StringBuilder();
-            int bytes = 0; // количество полученных байт
             try
             {
-                IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse(address), port);
-
-                Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                // подключаемся к удаленному хосту
-                socket.Connect(ipPoint);
-                do
-                { 
-                Console.Write("Введите сообщение:");
-                string message = Console.ReadLine();
-                byte[] data = Encoding.Unicode.GetBytes(message);
-                socket.Send(data);
-
-                // получаем ответ
-                    data = new byte[256]; // буфер для ответа
-                    bytes = socket.Receive(data, data.Length, 0);
-                    builder.Append(Encoding.Unicode.GetString(data, 0, bytes));
-                }
-                while (socket.Available > 0);
-                Console.WriteLine("ответ сервера: " + builder.ToString());
-                if(socket.Available <= 0)
-                {
-                    Console.WriteLine("kek");
-                }
-                if (builder.ToString().Equals("Пока"))
-                {// закрываем сокет
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Close();
-                }
+                SendMessageFromSocket(8005);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
             }
-            Console.Read();
+            finally
+            {
+                Console.ReadLine();
+            }
+        }
+
+        static void SendMessageFromSocket(int port)
+        {
+            // Буфер для входящих данных
+            byte[] bytes = new byte[1024];
+
+            // Соединяемся с удаленным устройством
+
+            // Устанавливаем удаленную точку для сокета
+            IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
+            IPAddress ipAddr = ipHost.AddressList[0];
+            IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
+
+            Socket sender = new Socket(ipAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            // Соединяем сокет с удаленной точкой
+            sender.Connect(ipEndPoint);
+
+            Console.Write("Введите сообщение: ");
+            string message = Console.ReadLine();
+
+            Console.WriteLine("Сокет соединяется с {0} ", sender.RemoteEndPoint.ToString());
+            byte[] msg = Encoding.UTF8.GetBytes(message);
+
+            // Отправляем данные через сокет
+            int bytesSent = sender.Send(msg);
+
+            // Получаем ответ от сервера
+            int bytesRec = sender.Receive(bytes);
+
+            Console.WriteLine("\nОтвет от сервера: {0}\n\n", Encoding.UTF8.GetString(bytes, 0, bytesRec));
+
+            // Используем рекурсию для неоднократного вызова SendMessageFromSocket()
+            if (message.IndexOf("<TheEnd>") == -1)
+                SendMessageFromSocket(port);
+
+            // Освобождаем сокет
+            sender.Shutdown(SocketShutdown.Both);
+            sender.Close();
         }
     }
 }
