@@ -2,6 +2,7 @@
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Drawing;
 
 namespace SocketServer
 {
@@ -33,14 +34,15 @@ namespace SocketServer
                     string data = null;
 
                     // Мы дождались клиента, пытающегося с нами соединиться
-
-                    byte[] bytes = new byte[1024];
+                    byte[] bytes = new byte[125000];
+                    
                     int bytesRec = handler.Receive(bytes);
-
-                    data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                    Image x = (Bitmap)((new ImageConverter()).ConvertFrom(bytes));
+                    x.Save("TEST.jpg");
+                    //data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
 
                     // Показываем данные на консоли
-                    Console.Write("Полученный текст: " + data + "\n\n");
+                    //Console.Write("Полученный текст: " + data + "\n\n");
 
                     // Отправляем ответ клиенту\
                     string reply = "Спасибо за запрос в " + data.Length.ToString()
