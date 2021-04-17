@@ -3,9 +3,22 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Drawing;
+using System.IO;
 
 namespace SocketClient
 {
+    enum MessageType
+    {
+        TextMsg = 0x01, // простое текстовое сообщение
+        ImageMsg
+    }
+
+    //составляющие сообщения
+    struct Message
+    {
+       public MessageType iType; // тип сообщения
+       public string sBody; // содержимое сообщения
+    };
     class Program
     {
         static string FileName = "E:\\1.jpg";//"C:\\Users\\Скит\\source\\repos\\ConsoleApp8\\ConsoleApp8\\testImage";
@@ -25,10 +38,33 @@ namespace SocketClient
             }
         }
 
+        static byte[] MessageToByte(ref Message msg)
+        {
+            byte[] buffer;
+            using (var ms = new MemoryStream())
+            {
+                using (var bw = new BinaryWriter(ms, Encoding.UTF8))
+                {
+                    bw.Write((int)msg.iType);
+                    bw.Write(msg.sBody);
+                }
+                buffer = ms.ToArray();
+            }
+            return buffer;
+        }
+
+        // функция для отправки текстового сообщения. Код для текста - 0x01
         static void SendText (Socket sender, string message)
         {
-            byte[] msg = Encoding.UTF8.GetBytes(message);
-            int bytesSent = sender.Send(msg);
+            Message msg;
+            msg.iType = MessageType.TextMsg;
+            msg.sBody = message;
+            byte[] bMessage = MessageToByte(ref msg);
+            sender.Send(bMessage);
+            /*byte[] msg;
+            msg = Encoding.UTF8.GetBytes("0x01");
+            msg = Encoding.UTF8.GetBytes(message);
+            int bytesSent = sender.Send(msg);*/
         }
 
         static Image getInfoPhoto()
@@ -61,7 +97,7 @@ namespace SocketClient
             if (message == "отправь изображение")
             {
                 getInfoPhoto();
-                sender.SendFile(FileName);
+             //   sender.SendFile(FileName);
             }
             else
             {

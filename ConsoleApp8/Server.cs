@@ -3,11 +3,50 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Drawing;
+using System.IO;
 
 namespace SocketServer
 {
+    enum MessageType
+    {
+        TextMsg = 0x01, // простое текстовое сообщение
+        ImageMsg
+    }
+
+    //составляющие сообщения
+    struct Message
+    {
+        public MessageType iType; // тип сообщения
+        public string sBody; // содержимое сообщения
+    };
     class Program
     {
+        //тут возможно помогт шаблоны? ибо могём вернуть не только текстовое сообщение, но и изображение
+        static Message ReceiveMessage(ref byte[] byteMessage)
+        {
+            Message forDelete = new Message(); //удали
+            using (var ms = new MemoryStream(byteMessage))
+            {
+                using (var br = new BinaryReader(ms, Encoding.UTF8))
+                {
+                    MessageType type = (MessageType)br.ReadInt32();
+                    if (type == MessageType.TextMsg)
+                    {
+                        Message message;
+                        message.iType = type;
+                        message.sBody = br.ReadString();
+                        return message;
+                    }
+/*                    else
+                    {
+                        //тут должна быть обработка мессаги с изображением
+
+                    }*/
+
+                }
+            }
+            return forDelete;
+        }
         static void Main(string[] args)
         {
             // Устанавливаем для сокета локальную конечную точку
@@ -31,26 +70,33 @@ namespace SocketServer
 
                     // Программа приостанавливается, ожидая входящее соединение
                     Socket handler = sListener.Accept();
-                    string data = null;
+             //       string data = null;
 
                     // Мы дождались клиента, пытающегося с нами соединиться
                     byte[] bytes = new byte[125000];
                     
                     int bytesRec = handler.Receive(bytes);
-                    Image x = (Bitmap)((new ImageConverter()).ConvertFrom(bytes));
-                    x.Save("TEST.jpg");
+                    Message msg = ReceiveMessage(ref bytes);
+
+                    Console.WriteLine("Получено сообщение типа {0}, содержимое = {1}", msg.iType, msg.sBody);
+                    
+                    //для получения и сохранения картинок
+                    /*Image x = (Bitmap)((new ImageConverter()).ConvertFrom(bytes));
+                    x.Save("TEST.jpg");*/
+
+
                     //data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
 
                     // Показываем данные на консоли
                     //Console.Write("Полученный текст: " + data + "\n\n");
 
                     // Отправляем ответ клиенту\
-                    string reply = "Спасибо за запрос в " + data.Length.ToString()
-                            + " символов";
-                    byte[] msg = Encoding.UTF8.GetBytes(reply);
-                    handler.Send(msg);
+                  /*  string reply = "Спасибо за запрос в " + data.Length.ToString()
+                            + " символов";*/
+                    //byte[] msg = Encoding.UTF8.GetBytes(reply);
+                    //handler.Send(msg);
 
-                    if (data.IndexOf("<TheEnd>") > -1)
+                    if (msg.sBody.IndexOf("<TheEnd>") > -1)
                     {
                         Console.WriteLine("Сервер завершил соединение с клиентом.");
                         break;
