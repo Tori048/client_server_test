@@ -54,7 +54,7 @@ namespace SocketClient
         }
 
         // функция для отправки текстового сообщения. Код для текста - 0x01
-        static void SendText (Socket sender, string message)
+        static void SendText(Socket sender, string message)
         {
             Message msg;
             msg.iType = MessageType.TextMsg;
@@ -65,6 +65,10 @@ namespace SocketClient
             msg = Encoding.UTF8.GetBytes("0x01");
             msg = Encoding.UTF8.GetBytes(message);
             int bytesSent = sender.Send(msg);*/
+        }
+        static void SendImage(Socket sender)
+        {
+
         }
 
         static Image getInfoPhoto()
@@ -97,7 +101,7 @@ namespace SocketClient
             if (message == "отправь изображение")
             {
                 getInfoPhoto();
-             //   sender.SendFile(FileName);
+                sender.SendFile(FileName);
             }
             else
             {

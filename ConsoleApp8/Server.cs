@@ -14,17 +14,16 @@ namespace SocketServer
     }
 
     //составляющие сообщения
-    struct Message
+    struct Message<T>
     {
         public MessageType iType; // тип сообщения
-        public string sBody; // содержимое сообщения
+        public T sBody; // содержимое сообщения
     };
     class Program
     {
         //тут возможно помогт шаблоны? ибо могём вернуть не только текстовое сообщение, но и изображение
-        static Message ReceiveMessage(ref byte[] byteMessage)
+        static dynamic ReceiveMessage(ref byte[] byteMessage)
         {
-            Message forDelete = new Message(); //удали
             using (var ms = new MemoryStream(byteMessage))
             {
                 using (var br = new BinaryReader(ms, Encoding.UTF8))
@@ -32,7 +31,7 @@ namespace SocketServer
                     MessageType type = (MessageType)br.ReadInt32();
                     if (type == MessageType.TextMsg)
                     {
-                        Message message;
+                        Message<string> message;
                         message.iType = type;
                         message.sBody = br.ReadString();
                         return message;
@@ -45,7 +44,7 @@ namespace SocketServer
 
                 }
             }
-            return forDelete;
+            return "fuck";
         }
         static void Main(string[] args)
         {
@@ -76,10 +75,15 @@ namespace SocketServer
                     byte[] bytes = new byte[125000];
                     
                     int bytesRec = handler.Receive(bytes);
-                    Message msg = ReceiveMessage(ref bytes);
-
-                    Console.WriteLine("Получено сообщение типа {0}, содержимое = {1}", msg.iType, msg.sBody);
-                    
+                    dynamic msg = ReceiveMessage(ref bytes);
+                    if (msg is string)
+                    {
+                        Console.WriteLine(msg);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Получено сообщение типа {0}, содержимое = {1}", msg.iType, msg.sBody);
+                    }
                     //для получения и сохранения картинок
                     /*Image x = (Bitmap)((new ImageConverter()).ConvertFrom(bytes));
                     x.Save("TEST.jpg");*/
