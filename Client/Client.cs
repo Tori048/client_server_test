@@ -17,7 +17,7 @@ namespace SocketClient
     struct Message
     {
        public MessageType iType; // тип сообщения
-       public string sBody; // содержимое сообщения
+       public byte[] yBody; // содержимое сообщения в строку
     };
     class Program
     {
@@ -46,7 +46,7 @@ namespace SocketClient
                 using (var bw = new BinaryWriter(ms, Encoding.UTF8))
                 {
                     bw.Write((int)msg.iType);
-                    bw.Write(msg.sBody);
+                    bw.Write(msg.yBody);
                 }
                 buffer = ms.ToArray();
             }
@@ -58,7 +58,8 @@ namespace SocketClient
         {
             Message msg;
             msg.iType = MessageType.TextMsg;
-            msg.sBody = message;
+            msg.yBody = System.Text.Encoding.UTF8.GetBytes(message);
+            //msg.sBody = message;
             byte[] bMessage = MessageToByte(ref msg);
             sender.Send(bMessage);
             /*byte[] msg;
@@ -66,9 +67,14 @@ namespace SocketClient
             msg = Encoding.UTF8.GetBytes(message);
             int bytesSent = sender.Send(msg);*/
         }
+        // функция для отправки изображения в сообщения. Код для иображения - 0х02
         static void SendImage(Socket sender)
         {
-
+            Message msg;
+            msg.iType = MessageType.ImageMsg;
+            msg.yBody = File.ReadAllBytes(FileName);
+            byte[] bMessage = MessageToByte(ref msg);
+            sender.Send(bMessage);
         }
 
         static Image getInfoPhoto()

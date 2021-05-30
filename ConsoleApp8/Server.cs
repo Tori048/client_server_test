@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace SocketServer
 {
@@ -14,14 +15,13 @@ namespace SocketServer
     }
 
     //составляющие сообщения
-    struct Message<T>
+    struct Message
     {
         public MessageType iType; // тип сообщения
-        public T sBody; // содержимое сообщения
+        public byte[] yBody; // содержимое сообщения
     };
     class Program
     {
-        //тут возможно помогт шаблоны? ибо могём вернуть не только текстовое сообщение, но и изображение
         static dynamic ReceiveMessage(ref byte[] byteMessage)
         {
             using (var ms = new MemoryStream(byteMessage))
@@ -31,10 +31,14 @@ namespace SocketServer
                     MessageType type = (MessageType)br.ReadInt32();
                     if (type == MessageType.TextMsg)
                     {
-                        Message<string> message;
+                        Message message;
                         message.iType = type;
-                        message.sBody = br.ReadString();
+                        message.yBody = br.ReadBytes(byteMessage.Length - 1); // общая длина сообщения - длина типа мессаги? надо переделать в более верный вариант
                         return message;
+                    }
+                    else if (type == MessageType.ImageMsg)
+                    {
+                        // ToDO - распиши как работать на сервере с изображением. Клиент уже вроде умеет его нормально отправлять
                     }
 /*                    else
                     {
