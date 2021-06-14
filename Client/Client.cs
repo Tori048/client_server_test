@@ -59,13 +59,8 @@ namespace SocketClient
             Message msg;
             msg.iType = MessageType.TextMsg;
             msg.yBody = System.Text.Encoding.UTF8.GetBytes(message);
-            //msg.sBody = message;
             byte[] bMessage = MessageToByte(ref msg);
             sender.Send(bMessage);
-            /*byte[] msg;
-            msg = Encoding.UTF8.GetBytes("0x01");
-            msg = Encoding.UTF8.GetBytes(message);
-            int bytesSent = sender.Send(msg);*/
         }
         // функция для отправки изображения в сообщения. Код для иображения - 0х02
         static void SendImage(Socket sender)
@@ -107,7 +102,8 @@ namespace SocketClient
             if (message == "отправь изображение")
             {
                 getInfoPhoto();
-                sender.SendFile(FileName);
+                // sender.SendFile(FileName);
+                SendImage(sender);
             }
             else
             {
@@ -120,7 +116,7 @@ namespace SocketClient
             Console.WriteLine("\nОтвет от сервера: {0}\n\n", Encoding.UTF8.GetString(bytes, 0, bytesRec));
 
             // Используем рекурсию для неоднократного вызова SendMessageFromSocket()
-            if (message.IndexOf("<TheEnd>") == -1)
+           // if (message.IndexOf("<TheEnd>") == -1)
                 SendMessageFromSocket(port);
 
             // Освобождаем сокет

@@ -20,9 +20,10 @@ namespace SocketServer
         public MessageType iType; // тип сообщения
         public byte[] yBody; // содержимое сообщения
     };
+
     class Program
     {
-        static dynamic ReceiveMessage(ref byte[] byteMessage)
+        static dynamic ReceiveMessage(ref byte[] byteMessage, int bytesRec)
         {
             using (var ms = new MemoryStream(byteMessage))
             {
@@ -33,19 +34,19 @@ namespace SocketServer
                     {
                         Message message;
                         message.iType = type;
-                        message.yBody = br.ReadBytes(byteMessage.Length - 1); // общая длина сообщения - длина типа мессаги? надо переделать в более верный вариант
+                        message.yBody = br.ReadBytes(bytesRec - sizeof(int)); // общая длина сообщения - длина типа мессаги? надо переделать в более верный вариант
+                        
                         return message;
                     }
                     else if (type == MessageType.ImageMsg)
                     {
-                        // ToDO - распиши как работать на сервере с изображением. Клиент уже вроде умеет его нормально отправлять
+                        Message message;
+                        message.iType = type;
+                        message.yBody = br.ReadBytes(bytesRec - sizeof(int)); // общая длина сообщения - длина типа мессаги? надо переделать в более верный вариант
+                        Image x = (Bitmap)((new ImageConverter()).ConvertFrom(message.yBody));
+                        x.Save("TEST.jpg");
+                        return message;
                     }
-/*                    else
-                    {
-                        //тут должна быть обработка мессаги с изображением
-
-                    }*/
-
                 }
             }
             return "fuck";
@@ -79,36 +80,38 @@ namespace SocketServer
                     byte[] bytes = new byte[125000];
                     
                     int bytesRec = handler.Receive(bytes);
-                    dynamic msg = ReceiveMessage(ref bytes);
-                    if (msg is string)
+                    Message msg = ReceiveMessage(ref bytes, bytesRec);
+                    if (msg.iType == MessageType.TextMsg)
                     {
-                        Console.WriteLine(msg);
+                        Console.WriteLine(Encoding.UTF8.GetString(msg.yBody));
+                    }
+                    else if (msg.iType == MessageType.ImageMsg)
+                    {
+                        Console.WriteLine("Получено сообщение типа {0}", msg.iType);//, msg.yBody);
                     }
                     else
-                    {
-                        Console.WriteLine("Получено сообщение типа {0}, содержимое = {1}", msg.iType, msg.sBody);
-                    }
+                        Console.WriteLine("что-то пошло не так");
                     //для получения и сохранения картинок
                     /*Image x = (Bitmap)((new ImageConverter()).ConvertFrom(bytes));
                     x.Save("TEST.jpg");*/
 
 
-                    //data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                        //data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
 
-                    // Показываем данные на консоли
-                    //Console.Write("Полученный текст: " + data + "\n\n");
+                        // Показываем данные на консоли
+                        //Console.Write("Полученный текст: " + data + "\n\n");
 
-                    // Отправляем ответ клиенту\
-                  /*  string reply = "Спасибо за запрос в " + data.Length.ToString()
-                            + " символов";*/
-                    //byte[] msg = Encoding.UTF8.GetBytes(reply);
-                    //handler.Send(msg);
+                        // Отправляем ответ клиенту\
+                        /*  string reply = "Спасибо за запрос в " + data.Length.ToString()
+                                  + " символов";*/
+                        //byte[] msg = Encoding.UTF8.GetBytes(reply);
+                        //handler.Send(msg);
 
-                    if (msg.sBody.IndexOf("<TheEnd>") > -1)
-                    {
-                        Console.WriteLine("Сервер завершил соединение с клиентом.");
-                        break;
-                    }
+                        /*  if (msg.yBody.IndexOf("<TheEnd>") > -1)
+                          {
+                              Console.WriteLine("Сервер завершил соединение с клиентом.");
+                              break;
+                          }*/
 
                     handler.Shutdown(SocketShutdown.Both);
                     handler.Close();
