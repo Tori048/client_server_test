@@ -5,6 +5,9 @@ using System.Net.Sockets;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using Gma.QrCodeNet.Encoding;
+using Gma.QrCodeNet.Encoding.Windows.Render;
+using System.Drawing.Imaging;
 
 namespace SocketServer
 {
@@ -13,7 +16,7 @@ namespace SocketServer
         TextMsg = 0x01, // простое текстовое сообщение
         ImageMsg
     }
-
+    
     //составляющие сообщения
     struct Message
     {
@@ -23,6 +26,31 @@ namespace SocketServer
 
     class Program
     {
+        /*
+         * Создаёт QR код с известным текстом.
+         */
+        static void QRcode()
+        {
+            string new_file_name = "qrTest";
+
+            QrEncoder qrEncoder = new QrEncoder(ErrorCorrectionLevel.H);
+            QrCode qrCode = new QrCode();
+            qrEncoder.TryEncode("Hello, QRWord", out qrCode);
+            var fCodeSize = new FixedCodeSize(200, QuietZoneModules.Two);
+            fCodeSize.QuietZoneModules = QuietZoneModules.Four;
+            GraphicsRenderer renderer = new GraphicsRenderer(fCodeSize, Brushes.Black, Brushes.White);
+
+            MemoryStream ms = new MemoryStream();
+
+            renderer.WriteToStream(qrCode.Matrix, ImageFormat.Png, ms);
+
+            var imageTemp = new Bitmap(ms);
+
+            var image = new Bitmap(imageTemp, new Size(new Point(200, 200)));
+
+            image.Save(new_file_name + ".png", ImageFormat.Png);
+        }
+
         static dynamic ReceiveMessage(ref byte[] byteMessage, int bytesRec)
         {
             using (var ms = new MemoryStream(byteMessage))
@@ -53,6 +81,7 @@ namespace SocketServer
         }
         static void Main(string[] args)
         {
+            QRcode();
             // Устанавливаем для сокета локальную конечную точку
             IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
             IPAddress ipAddr = ipHost.AddressList[0];
