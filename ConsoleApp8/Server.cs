@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 using Gma.QrCodeNet.Encoding;
 using Gma.QrCodeNet.Encoding.Windows.Render;
 using System.Drawing.Imaging;
+using MessagingToolkit.QRCode;
+using MessagingToolkit.QRCode.Codec;
+using MessagingToolkit.QRCode.Codec.Data;
 
 namespace SocketServer
 {
@@ -72,7 +75,10 @@ namespace SocketServer
                         message.iType = type;
                         message.yBody = br.ReadBytes(bytesRec - sizeof(int)); // общая длина сообщения - длина типа мессаги? надо переделать в более верный вариант
                         Image x = (Bitmap)((new ImageConverter()).ConvertFrom(message.yBody));
-                        x.Save("TEST.jpg");
+                        x.Save("TESTQR.jpg");
+                        QRCodeDecoder decoder = new QRCodeDecoder();
+                        var dec = decoder.decode(new QRCodeBitmapImage(x as Bitmap));
+                        Console.Write("dec = {0}", dec);
                         return message;
                     }
                 }
@@ -81,7 +87,7 @@ namespace SocketServer
         }
         static void Main(string[] args)
         {
-            QRcode();
+            //QRcode();
             // Устанавливаем для сокета локальную конечную точку
             IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
             IPAddress ipAddr = ipHost.AddressList[0];

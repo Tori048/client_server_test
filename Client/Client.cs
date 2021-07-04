@@ -21,7 +21,7 @@ namespace SocketClient
     };
     class Program
     {
-        static string FileName = "E:\\1.jpg";//"C:\\Users\\Скит\\source\\repos\\ConsoleApp8\\ConsoleApp8\\testImage";
+        static string FileName = "E:\\2.png";//"C:\\Users\\Скит\\source\\repos\\ConsoleApp8\\ConsoleApp8\\testImage";
         static void Main(string[] args)
         {
             try
